@@ -4,11 +4,15 @@
 --  Deja la base limpia y lista para cargar el torneo de verdad.
 -- ============================================================
 
--- 1) Los 3 partidos de ejemplo (borra también sus participaciones y goles).
+-- 1) Las 6 fechas de ejemplo (borra también sus participaciones y goles).
 delete from public.partidos
-where fecha in ('2026-08-26', '2026-09-02', '2026-09-09');
+where fecha in (
+  '2026-06-01', '2026-06-08', '2026-06-15',
+  '2026-06-22', '2026-06-29', '2026-07-06'
+);
 
 -- 2) Los jugadores de ejemplo.
+--    Si ya agregaste jugadores de verdad, borrá de esta lista los que quieras conservar.
 delete from public.jugadores
 where nombre in (
   'Nico', 'Fede', 'Martín', 'Lucas', 'Pablo', 'Diego',

@@ -1,20 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient.js'
-import {
-  calcularEstadisticas,
-  formatearPorcentaje,
-  MINIMO_ASISTENCIA,
-} from '../lib/stats.js'
+import { calcularEstadisticas, MINIMO_ASISTENCIA } from '../lib/stats.js'
+import SeccionPosiciones from '../components/SeccionPosiciones.jsx'
+import SeccionGoles from '../components/SeccionGoles.jsx'
+import SeccionAsistencia from '../components/SeccionAsistencia.jsx'
+import SeccionComparar from '../components/SeccionComparar.jsx'
 
 const SECCIONES = [
-  { id: 'efectividad', titulo: 'Efectividad' },
+  { id: 'posiciones', titulo: 'Posiciones' },
   { id: 'goles', titulo: 'Goles y figuras' },
   { id: 'asistencia', titulo: 'Asistencia' },
+  { id: 'comparar', titulo: 'Cara a cara' },
 ]
 
 export default function Publico() {
-  const [seccion, setSeccion] = useState('efectividad')
+  const [seccion, setSeccion] = useState('posiciones')
   const [torneos, setTorneos] = useState([])
   const [torneoId, setTorneoId] = useState(null)
   const [jugadores, setJugadores] = useState([])
@@ -23,7 +24,6 @@ export default function Publico() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
-  // Torneos + jugadores (una sola vez)
   useEffect(() => {
     let vivo = true
     ;(async () => {
@@ -48,7 +48,6 @@ export default function Publico() {
     }
   }, [])
 
-  // Partidos + participaciones del torneo elegido
   useEffect(() => {
     if (!torneoId) return
     let vivo = true
@@ -97,16 +96,34 @@ export default function Publico() {
 
   const torneo = torneos.find((t) => t.id === torneoId)
   const minimoPartidos = Math.ceil(stats.totalPartidos * MINIMO_ASISTENCIA)
+  const ultima = partidos[0]
 
   return (
     <>
-      <header className="encabezado">
-        <div className="encabezado-inner">
-          <div>
-            <h1>⚽ {torneo ? torneo.nombre : 'Torneo Fútbol 5'}</h1>
-            <div className="sub">
-              {stats.totalPartidos} {stats.totalPartidos === 1 ? 'partido jugado' : 'partidos jugados'}
-              {torneo && !torneo.activo ? ' · torneo cerrado' : ''}
+      <header className="marca">
+        <div className="marca-inner">
+          <div style={{ minWidth: 0 }}>
+            <div className="kicker">
+              {torneo && !torneo.activo ? (
+                <>Torneo cerrado</>
+              ) : (
+                <>
+                  Torneo <b>en curso</b>
+                </>
+              )}
+            </div>
+            <h1>{torneo ? torneo.nombre : 'Torneo Fútbol 5'}</h1>
+            <div className="bajada">
+              <span className="num">{stats.totalPartidos}</span>{' '}
+              {stats.totalPartidos === 1 ? 'fecha' : 'fechas'}
+              <span className="sep">·</span>
+              <span className="num">{jugadores.filter((j) => j.activo).length}</span> jugadores
+              {ultima && (
+                <>
+                  <span className="sep">·</span>últ. {ultima.fecha.slice(8, 10)}/
+                  {ultima.fecha.slice(5, 7)}
+                </>
+              )}
             </div>
           </div>
           <Link to="/admin" className="btn sec chico">
@@ -119,8 +136,8 @@ export default function Publico() {
         {error && <div className="aviso error">{error}</div>}
 
         {torneos.length > 1 && (
-          <div className="campo">
-            <label htmlFor="sel-torneo">Torneo</label>
+          <div className="campo" style={{ marginTop: 18, marginBottom: 0 }}>
+            <label htmlFor="sel-torneo">Ver otro torneo</label>
             <select
               id="sel-torneo"
               value={torneoId || ''}
@@ -128,19 +145,20 @@ export default function Publico() {
             >
               {torneos.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.nombre} {t.activo ? '(en curso)' : '(cerrado)'}
+                  {t.nombre} {t.activo ? '· en curso' : '· cerrado'}
                 </option>
               ))}
             </select>
           </div>
         )}
 
-        <nav className="tabs">
+        <nav className="secciones">
           {SECCIONES.map((s) => (
             <button
               key={s.id}
               className={seccion === s.id ? 'activo' : ''}
               onClick={() => setSeccion(s.id)}
+              aria-current={seccion === s.id ? 'page' : undefined}
             >
               {s.titulo}
             </button>
@@ -150,203 +168,35 @@ export default function Publico() {
         {cargando ? (
           <div className="cargando">Cargando…</div>
         ) : stats.totalPartidos === 0 ? (
-          <div className="card">
-            <div className="vacio-msg">
-              Todavía no se cargó ningún partido en este torneo.
-            </div>
+          <div className="vacio-msg">
+            Todavía no se jugó ninguna fecha de este torneo.
+            <br />
+            Cuando el admin cargue el primer partido, acá aparecen las tablas.
           </div>
         ) : (
           <>
-            {seccion === 'efectividad' && (
-              <TablaEfectividad stats={stats} minimoPartidos={minimoPartidos} />
+            {seccion === 'posiciones' && (
+              <SeccionPosiciones stats={stats} minimoPartidos={minimoPartidos} />
             )}
-            {seccion === 'goles' && <GolesYFiguras stats={stats} />}
+            {seccion === 'goles' && <SeccionGoles stats={stats} />}
             {seccion === 'asistencia' && (
-              <TablaAsistencia stats={stats} minimoPartidos={minimoPartidos} />
+              <SeccionAsistencia stats={stats} minimoPartidos={minimoPartidos} />
+            )}
+            {seccion === 'comparar' && (
+              <SeccionComparar
+                stats={stats}
+                partidos={partidos}
+                participaciones={participaciones}
+              />
             )}
           </>
         )}
 
         <p className="pie">
-          Victoria 3 pts · Empate 1 pt · Derrota 0 pts · Los invitados no suman puntos.
+          Victoria 3 pts · Empate 1 pt · Derrota 0 pts. Los puntos se asignan según el resultado
+          del equipo en el que jugó cada uno. Los invitados no suman.
         </p>
       </div>
     </>
-  )
-}
-
-function claseP(i) {
-  return i === 0 ? 'podio-1' : i === 1 ? 'podio-2' : i === 2 ? 'podio-3' : ''
-}
-
-function TablaEfectividad({ stats, minimoPartidos }) {
-  return (
-    <div className="card">
-      <h2>Tabla de efectividad</h2>
-      <p className="ayuda">
-        Efectividad = puntos ÷ (partidos jugados × 3). Sólo entran los jugadores con al menos{' '}
-        <b>{minimoPartidos}</b> de los {stats.totalPartidos} partidos disputados (60 %). Si hay
-        empate en efectividad, va primero el que jugó más partidos.
-      </p>
-
-      {stats.efectividad.length === 0 ? (
-        <div className="vacio-msg">
-          Ningún jugador llega todavía al 60 % de asistencia.
-        </div>
-      ) : (
-        <div className="tabla-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Jugador</th>
-                <th>PJ</th>
-                <th>G</th>
-                <th>E</th>
-                <th>P</th>
-                <th>Pts</th>
-                <th>Efec.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.efectividad.map((f, i) => (
-                <tr key={f.jugadorId} className={claseP(i)}>
-                  <td>{i + 1}</td>
-                  <td>{f.nombre}</td>
-                  <td>{f.pj}</td>
-                  <td>{f.pg}</td>
-                  <td>{f.pe}</td>
-                  <td>{f.pp}</td>
-                  <td>
-                    <b>{f.pts}</b>
-                  </td>
-                  <td className="destacado">{formatearPorcentaje(f.efectividad)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function GolesYFiguras({ stats }) {
-  return (
-    <>
-      <div className="card">
-        <h2>Goleadores</h2>
-        <p className="ayuda">Goles totales en el torneo.</p>
-        {stats.goleadores.length === 0 ? (
-          <div className="vacio-msg">Todavía no se cargaron goles.</div>
-        ) : (
-          <div className="tabla-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Jugador</th>
-                  <th>PJ</th>
-                  <th>Goles</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.goleadores.map((f, i) => (
-                  <tr key={f.jugadorId} className={claseP(i)}>
-                    <td>{i + 1}</td>
-                    <td>{f.nombre}</td>
-                    <td>{f.pj}</td>
-                    <td className="destacado">
-                      <b>{f.goles}</b>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <h2>Figuras del partido</h2>
-        <p className="ayuda">Cuántas veces fue elegido figura.</p>
-        {stats.figuras.length === 0 ? (
-          <div className="vacio-msg">Todavía no se eligieron figuras.</div>
-        ) : (
-          <div className="tabla-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Jugador</th>
-                  <th>PJ</th>
-                  <th>Figuras</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.figuras.map((f, i) => (
-                  <tr key={f.jugadorId} className={claseP(i)}>
-                    <td>{i + 1}</td>
-                    <td>{f.nombre}</td>
-                    <td>{f.pj}</td>
-                    <td className="destacado">
-                      <b>{f.figuras}</b>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </>
-  )
-}
-
-function TablaAsistencia({ stats, minimoPartidos }) {
-  const habilitados = stats.asistencia.filter((f) => f.habilitado).length
-  return (
-    <div className="card">
-      <h2>Asistencia</h2>
-      <p className="ayuda">
-        Sobre {stats.totalPartidos} partidos. En verde los que superan el 60 % (mínimo{' '}
-        {minimoPartidos} partidos) y por lo tanto entran en la tabla de efectividad:{' '}
-        <b>{habilitados}</b> de {stats.asistencia.length}.
-      </p>
-      <div className="tabla-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Jugador</th>
-              <th>PJ</th>
-              <th>%</th>
-              <th style={{ minWidth: 80 }}>&nbsp;</th>
-              <th>Tabla</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats.asistencia.map((f, i) => (
-              <tr key={f.jugadorId}>
-                <td>{i + 1}</td>
-                <td>{f.nombre}</td>
-                <td>{f.pj}</td>
-                <td>{formatearPorcentaje(f.asistencia)}</td>
-                <td>
-                  <div className={`barra${f.habilitado ? '' : ' baja'}`}>
-                    <span style={{ width: `${Math.min(100, f.asistencia)}%` }} />
-                  </div>
-                </td>
-                <td>
-                  <span className={`chip ${f.habilitado ? 'ok' : 'no'}`}>
-                    {f.habilitado ? 'Sí' : 'No'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
   )
 }

@@ -482,13 +482,15 @@ function ItemPartido({ partido, participaciones, nombrePorId, onEditar, onBorrar
 
   const etiqueta =
     partido.resultado === 'A' ? 'Ganó A' : partido.resultado === 'B' ? 'Ganó B' : 'Empate'
+  const claseChip =
+    partido.resultado === 'A' ? 'azul' : partido.resultado === 'B' ? 'acento' : ''
 
   return (
-    <div className="partido-item">
+    <div className={`partido-item res-${partido.resultado}`}>
       <div className="partido-cab">
         <div>
           <div className="fecha">{formatearFecha(partido.fecha)}</div>
-          <span className="chip ok">{etiqueta}</span>{' '}
+          <span className={`chip ${claseChip}`}>{etiqueta}</span>{' '}
           {partido.figura_jugador_id && (
             <span className="chip">★ {nombrePorId.get(partido.figura_jugador_id) || '—'}</span>
           )}

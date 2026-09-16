@@ -62,19 +62,28 @@ Pestaña **Jugadores**: escribís el nombre, tocás **Agregar** y listo. Tambié
 
 ---
 
-## 3. Cómo se calcula todo
+## 3. Qué muestra la vista pública
+
+Cuatro secciones:
+
+| Sección | Qué trae |
+|---|---|
+| **Posiciones** | Tabla por efectividad, con PJ · G · E · P · Pts · Efec. y la columna **Forma** (los últimos 5 resultados en círculos verde/gris/rojo). Arriba, una franja con el goleador y el jugador con la racha más larga en curso. |
+| **Goles y figuras** | Goleadores con total y **promedio de gol por partido**, y el ranking de figuras. |
+| **Asistencia** | Partidos jugados y % sobre el total, con barra y marca de quién llega al 60 %. |
+| **Cara a cara** | Comparación entre dos jugadores: el récord **enfrentados** (ganó uno / empates / ganó el otro), el rendimiento **del mismo lado**, las métricas lado a lado y el listado de todos los partidos que compartieron con su resultado. |
+
+### Las reglas
 
 - **Victoria = 3 puntos · Empate = 1 · Derrota = 0**, según el resultado del equipo en el que
   jugó cada uno.
 - **Efectividad = puntos ÷ (partidos jugados × 3) × 100** → un porcentaje de 0 a 100.
-- En la **tabla de efectividad** solo aparecen los jugadores que jugaron **al menos el 60 % de los
+- En la **tabla de posiciones** solo aparecen los jugadores que jugaron **al menos el 60 % de los
   partidos disputados hasta ese momento** (el mínimo se recalcula solo a medida que se juegan más
-  partidos). Así nadie sale campeón por haber jugado un partido y ganarlo.
+  partidos). Así nadie sale campeón por haber jugado un partido y ganarlo. Los que no llegan
+  siguen apareciendo en Asistencia.
 - **Desempate**: a igual efectividad, primero el que jugó más partidos.
 - Los **invitados** quedan siempre afuera de puntos y estadísticas.
-
-La vista pública tiene tres secciones: **Efectividad**, **Goles y figuras** y **Asistencia**
-(esta última marca en verde a los que superan el 60 %).
 
 ---
 
@@ -93,15 +102,15 @@ los torneos cerrados.
 
 ## 5. Borrar los datos de prueba
 
-La base viene con **11 jugadores y 3 partidos de ejemplo** para que veas las tablas funcionando.
-Para dejarla limpia:
+La base tiene **11 jugadores y 6 fechas de ejemplo** (junio–julio 2026) para que se vean las
+tablas, las rachas y el cara a cara funcionando. Para dejarla limpia:
 
 1. Entrá al **[SQL Editor de Supabase](https://supabase.com/dashboard/project/kxstlcnmjjdytmlwczio/sql/new)**.
 2. Pegá el contenido de [`supabase/borrar-datos-prueba.sql`](supabase/borrar-datos-prueba.sql).
 3. **Run**.
 
-(También podés borrarlos a mano desde el panel: borrás los 3 partidos y desactivás/borrás los
-jugadores.)
+Si querés volver a cargarlos, el script inverso es
+[`supabase/datos-de-prueba.sql`](supabase/datos-de-prueba.sql).
 
 ---
 
@@ -109,14 +118,24 @@ jugadores.)
 
 **Stack:** React 18 + Vite (JavaScript) · Supabase (Postgres + Auth) · Vercel.
 
+**Tipografía:** Barlow Condensed (títulos y números) + Manrope (texto), vía Google Fonts.
+
 ```
 src/
-  pages/Publico.jsx        vista pública (3 secciones)
-  pages/Admin.jsx          panel admin + sesión
-  components/              Login, PanelPartidos, PanelJugadores, PanelTorneo
-  lib/stats.js             todo el cálculo de puntos, efectividad y asistencia
-api/keepalive.mjs          ping diario a Supabase (cron de Vercel)
-supabase/schema.sql        esquema + políticas RLS
+  pages/Publico.jsx          vista pública, carga de datos y navegación
+  pages/Admin.jsx            panel admin + sesión
+  components/
+    SeccionPosiciones.jsx    tabla principal con Forma
+    SeccionGoles.jsx         goleadores (con promedio) y figuras
+    SeccionAsistencia.jsx    asistencia y corte del 60 %
+    SeccionComparar.jsx      cara a cara entre dos jugadores
+    Piezas.jsx               avatar por iniciales y círculos de forma
+    Login / PanelPartidos / PanelJugadores / PanelTorneo
+  lib/stats.js               puntos, efectividad, asistencia, rachas, promedios
+  lib/comparar.js            cruce entre dos jugadores (juntos / enfrentados)
+  styles.css                 sistema visual completo
+api/keepalive.mjs            ping diario a Supabase (cron de Vercel)
+supabase/schema.sql          esquema + políticas RLS
 supabase/datos-de-prueba.sql
 supabase/borrar-datos-prueba.sql
 ```
