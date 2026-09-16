@@ -66,22 +66,24 @@ export default function PanelPartidos({
   }
 
   function alternarEquipo(jugadorId, equipo) {
+    // Tocar el mismo botón dos veces saca al jugador del partido.
+    const quitar = asignaciones[jugadorId] === equipo
+
     setAsignaciones((prev) => {
-      const actual = prev[jugadorId]
       const sig = { ...prev }
-      if (actual === equipo) {
-        delete sig[jugadorId]
-        setGoles((g) => {
-          const ng = { ...g }
-          delete ng[jugadorId]
-          return ng
-        })
-        setFiguraId((f) => (f === jugadorId ? '' : f))
-      } else {
-        sig[jugadorId] = equipo
-      }
+      if (quitar) delete sig[jugadorId]
+      else sig[jugadorId] = equipo
       return sig
     })
+
+    if (quitar) {
+      setGoles((g) => {
+        const ng = { ...g }
+        delete ng[jugadorId]
+        return ng
+      })
+      setFiguraId((f) => (f === jugadorId ? '' : f))
+    }
   }
 
   function agregarInvitado(e) {
